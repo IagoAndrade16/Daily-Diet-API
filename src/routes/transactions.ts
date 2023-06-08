@@ -4,7 +4,7 @@ import { knex } from '../database'
 import { randomUUID } from 'node:crypto'
 import { checkSessionIdExists } from '../middlewares/check-session-exists'
 
-export async function transactionsRoutes(app: FastifyInstance) {
+export async function dietRoutes(app: FastifyInstance) {
   // app.addHook('preHandler', async (req, res) => {
   //   console.log(`[${req.method}] ${req.url}`)
   // })
