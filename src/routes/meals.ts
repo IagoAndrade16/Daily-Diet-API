@@ -4,19 +4,18 @@ import { knex } from '../database'
 import { randomUUID } from 'node:crypto'
 import { checkSessionIdExists } from '../middlewares/check-session-exists'
 
-export async function dietRoutes(app: FastifyInstance) {
-  // app.addHook('preHandler', async (req, res) => {
-  //   console.log(`[${req.method}] ${req.url}`)
-  // })
-
+export async function mealsRoutes(app: FastifyInstance) {
   app.post('/', async (req, res) => {
-    const createTransactionBodySchema = z.object({
-      title: z.string(),
-      amount: z.number(),
-      type: z.enum(['credit', 'debit']),
+    const insertMealSchema = z.object({
+      name: z.string(),
+      description: z.string(),
+      createdAt: z.string(),
+      isInDiet: z.boolean(),
     })
 
-    const { title, amount, type } = createTransactionBodySchema.parse(req.body)
+    const { name, description, createdAt, isInDiet } = insertMealSchema.parse(
+      req.body,
+    )
 
     let sessionId = req.cookies.sessionId
 
@@ -28,11 +27,14 @@ export async function dietRoutes(app: FastifyInstance) {
         maxAge: 1000 * 60 * 60 * 24 * 7,
       })
     }
-    await knex('transactions').insert({
+
+    await knex('meals').insert({
       id: randomUUID(),
-      title,
-      amount: type === 'credit' ? amount : amount * -1,
-      session_id: sessionId,
+      name,
+      description,
+      createdAt,
+      isInDiet,
+      sessionId,
     })
 
     return res.status(201).send()
