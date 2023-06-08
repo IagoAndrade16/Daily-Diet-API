@@ -40,20 +40,6 @@ export async function mealsRoutes(app: FastifyInstance) {
     return res.status(201).send()
   })
 
-  app.get(
-    '/',
-    {
-      preHandler: checkSessionIdExists,
-    },
-    async (req) => {
-      const { sessionId } = req.cookies
-
-      const meals = await knex('meals').where('sessionId', sessionId).select()
-
-      return { meals }
-    },
-  )
-
   app.patch(
     '/:id',
     {
@@ -103,7 +89,7 @@ export async function mealsRoutes(app: FastifyInstance) {
     {
       preHandler: checkSessionIdExists,
     },
-    async (req, res) => {
+    async (req) => {
       const getTransactionParamsSchema = z.object({
         id: z.string().uuid(),
       })
@@ -128,16 +114,30 @@ export async function mealsRoutes(app: FastifyInstance) {
         id: z.string().uuid(),
       })
 
-      const { id } = getTransactionParamsSchema.parse(req.params)
       const { sessionId } = req.cookies
-      const transaction = await knex('transactions')
-        .where({
-          session_id: sessionId,
-          id,
-        })
+      const { id } = getTransactionParamsSchema.parse(req.params)
+
+      const meal = await knex('meals')
+        .where('sessionId', sessionId)
+        .andWhere('id', id)
+        .select()
         .first()
 
-      return { transaction }
+      return { meal }
+    },
+  )
+
+  app.get(
+    '/',
+    {
+      preHandler: checkSessionIdExists,
+    },
+    async (req) => {
+      const { sessionId } = req.cookies
+
+      const meals = await knex('meals').where('sessionId', sessionId).select()
+
+      return { meals }
     },
   )
 
