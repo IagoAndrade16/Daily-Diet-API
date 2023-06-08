@@ -48,11 +48,53 @@ export async function mealsRoutes(app: FastifyInstance) {
     async (req) => {
       const { sessionId } = req.cookies
 
-      const transactions = await knex('transactions')
-        .where('session_id', sessionId)
-        .select()
+      const meals = await knex('meals').where('sessionId', sessionId).select()
 
-      return { transactions }
+      return { meals }
+    },
+  )
+
+  app.patch(
+    '/:id',
+    {
+      preHandler: checkSessionIdExists,
+    },
+    async (req, res) => {
+      const getTransactionParamsSchema = z.object({
+        id: z.string().uuid(),
+      })
+
+      const updateMealSchema = z.object({
+        name: z.string().nullable().optional(),
+        description: z.string().nullable().optional(),
+        createdAt: z.string().nullable().optional(),
+        isInDiet: z.boolean().nullable().optional(),
+      })
+
+      const { sessionId } = req.cookies
+      const { id } = getTransactionParamsSchema.parse(req.params)
+      const updateInput = updateMealSchema.parse(req.body)
+
+      const meal = await knex('meals')
+        .where('sessionId', sessionId)
+        .andWhere('id', id)
+        .select()
+        .first()
+
+      if (!meal) {
+        return res.status(400).send({
+          message: 'MEAL_NOT_FOUND',
+        })
+      }
+
+      await knex('meals')
+        .update({
+          name: updateInput.name ?? meal.name,
+          description: updateInput.description ?? meal.description,
+          createdAt: updateInput.createdAt ?? meal.createdAt,
+          isInDiet: updateInput.isInDiet ?? meal.isInDiet,
+        })
+        .where('id', id)
     },
   )
 
