@@ -46,7 +46,7 @@ export async function mealsRoutes(app: FastifyInstance) {
       preHandler: checkSessionIdExists,
     },
     async (req, res) => {
-      const getTransactionParamsSchema = z.object({
+      const getMealParamsSchema = z.object({
         id: z.string().uuid(),
       })
 
@@ -58,7 +58,7 @@ export async function mealsRoutes(app: FastifyInstance) {
       })
 
       const { sessionId } = req.cookies
-      const { id } = getTransactionParamsSchema.parse(req.params)
+      const { id } = getMealParamsSchema.parse(req.params)
       const updateInput = updateMealSchema.parse(req.body)
 
       const meal = await knex('meals')
@@ -90,40 +90,17 @@ export async function mealsRoutes(app: FastifyInstance) {
       preHandler: checkSessionIdExists,
     },
     async (req) => {
-      const getTransactionParamsSchema = z.object({
+      const getMealParamsSchema = z.object({
         id: z.string().uuid(),
       })
 
       const { sessionId } = req.cookies
-      const { id } = getTransactionParamsSchema.parse(req.params)
+      const { id } = getMealParamsSchema.parse(req.params)
 
       await knex('meals')
         .delete()
         .where('id', id)
         .andWhere('sessionId', sessionId)
-    },
-  )
-
-  app.get(
-    '/:id',
-    {
-      preHandler: checkSessionIdExists,
-    },
-    async (req) => {
-      const getTransactionParamsSchema = z.object({
-        id: z.string().uuid(),
-      })
-
-      const { sessionId } = req.cookies
-      const { id } = getTransactionParamsSchema.parse(req.params)
-
-      const meal = await knex('meals')
-        .where('sessionId', sessionId)
-        .andWhere('id', id)
-        .select()
-        .first()
-
-      return { meal }
     },
   )
 
@@ -142,6 +119,29 @@ export async function mealsRoutes(app: FastifyInstance) {
   )
 
   app.get(
+    '/:id',
+    {
+      preHandler: checkSessionIdExists,
+    },
+    async (req) => {
+      const getMealParamsSchema = z.object({
+        id: z.string().uuid(),
+      })
+
+      const { sessionId } = req.cookies
+      const { id } = getMealParamsSchema.parse(req.params)
+
+      const meal = await knex('meals')
+        .where('sessionId', sessionId)
+        .andWhere('id', id)
+        .select()
+        .first()
+
+      return { meal }
+    },
+  )
+
+  app.get(
     '/summary',
     {
       preHandler: checkSessionIdExists,
@@ -149,12 +149,16 @@ export async function mealsRoutes(app: FastifyInstance) {
     async (req) => {
       const { sessionId } = req.cookies
 
-      const summary = await knex('transactions')
-        .where('session_id', sessionId)
-        .sum('amount', { as: 'amount' })
-        .first()
+      const meals = await knex('meals').where('sessionId', sessionId)
 
-      return { summary }
+      const mealsInDiet = meals.filter((meal) => meal.isInDiet)
+      const mealsNotInDiet = meals.filter((meal) => !meal.isInDiet)
+
+      return {
+        totalMeals: meals.length,
+        mealsInDiet: mealsInDiet.length,
+        mealsNotInDiet: mealsNotInDiet.length,
+      }
     },
   )
 }
